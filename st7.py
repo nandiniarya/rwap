@@ -26,6 +26,11 @@ st.dataframe(df)
 
 
 
+import streamlit as st
+import pandas as pd
+import plotly.express as px
+from streamlit_plotly_events import plotly_events
+
 # Sample DataFrame for demonstration (use your df here)
 # df = pd.read_csv('your_data.csv')  # Ensure to use your actual data
 
@@ -104,15 +109,17 @@ if not filtered_df_wage.empty:
         title='Player Positions Treemap'
     )
     st.subheader("Player Stats by Wage Range")
-    st.plotly_chart(fig)
-
-    # Display player details
-    selected_position = st.selectbox("Select Player Position from Treemap", sorted(filtered_df_wage['player_positions_1'].unique()))
-    filtered_details = filtered_df_wage[filtered_df_wage['player_positions_1'] == selected_position]
     
-    if not filtered_details.empty:
-        st.write("Player Details:")
-        st.dataframe(filtered_details[['short_name', 'player_positions_1', 'nationality_name', 'club_name', 'wage_eur', 'value_eur', 'overall', 'potential', 'age']])
+    # Use plotly_events to capture clicks
+    selected_points = plotly_events(fig)
+
+    if selected_points:
+        selected_position = selected_points[0]['label']
+        filtered_details = filtered_df_wage[filtered_df_wage['player_positions_1'] == selected_position]
+        
+        if not filtered_details.empty:
+            st.write("Player Details:")
+            st.dataframe(filtered_details[['short_name', 'player_positions_1', 'nationality_name', 'club_name', 'wage_eur', 'value_eur', 'overall', 'potential', 'age']])
 
 # Third Visualization: Player Tags Bar Chart
 selected_tags = st.sidebar.multiselect(
