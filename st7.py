@@ -190,6 +190,8 @@ else:
     st.write("No data available for the selected filters.")
 
 
+
+
 import streamlit as st
 import pandas as pd
 import statsmodels.formula.api as smf
@@ -228,11 +230,13 @@ input_data = pd.DataFrame({
     'wage_eur': [wage_eur],
     'international_reputation': [international_reputation],
     'skill_moves': [skill_moves],
-    **{f'player_positions_1_{pos}': [1 if player_position == pos else 0] for pos in df['player_positions_1'].unique() if pos != df['player_positions_1'].unique()[0]}
+    **{f'player_positions_1_{pos}': [1 if player_position == pos else 0] for pos in df['player_positions_1'].unique()}
 })
 
-# Align input_data columns with model exog names
-input_data = input_data.reindex(columns=model.model.exog_names, fill_value=0)
+# Ensure all columns are present in input_data
+for col in model.model.exog_names:
+    if col not in input_data.columns:
+        input_data[col] = 0
 
 # Button to trigger prediction
 if st.button('Predict Value (EUR)'):
@@ -254,6 +258,11 @@ if st.button('Predict Value (EUR)'):
         ).properties(
             width=alt.Step(80)  # Controls the width of the bars
         )
+
+        st.altair_chart(chart)
+    except Exception as e:
+        st.error(f"Error during prediction: {e}")
+
 
         st.altair_chart(chart)
     except Exception as e:
