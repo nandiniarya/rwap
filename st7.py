@@ -195,15 +195,16 @@ import pandas as pd
 import statsmodels.formula.api as smf
 import altair as alt
 
-# Clean DataFrame (assuming df is defined elsewhere in your code)
+# Assuming df is your DataFrame
 df_clean = df[['value_eur', 'overall', 'potential', 'age', 'wage_eur', 'international_reputation', 'player_positions_1', 'skill_moves']].dropna()
 
-# One-hot encoding
+# Convert categorical variable to one-hot encoded variables
 df_clean = pd.get_dummies(df_clean, columns=['player_positions_1'], drop_first=True)
 
 # Define the regression model
-model = smf.ols('value_eur ~ overall + potential + age + wage_eur + international_reputation + skill_moves + ' + 
-                ' + '.join(df_clean.columns[df_clean.columns.str.startswith('player_positions_1')]), data=df_clean).fit()
+formula = 'value_eur ~ overall + potential + age + wage_eur + international_reputation + skill_moves + ' + \
+          ' + '.join(df_clean.columns[df_clean.columns.str.startswith('player_positions_1')])
+model = smf.ols(formula=formula, data=df_clean).fit()
 
 # Streamlit app
 st.title('Player Value Prediction')
@@ -230,27 +231,30 @@ input_data = pd.DataFrame({
     **{f'player_positions_1_{pos}': [1 if player_position == pos else 0] for pos in df['player_positions_1'].unique() if pos != df['player_positions_1'].unique()[0]}
 })
 
-# Align input_data columns with df_clean columns (fill missing columns with 0)
+# Align input_data columns with model exog names
 input_data = input_data.reindex(columns=model.model.exog_names, fill_value=0)
 
 # Button to trigger prediction
 if st.button('Predict Value (EUR)'):
-    predicted_value = model.predict(input_data)[0]
-    st.write(f"Predicted Value (EUR): {predicted_value:,.2f}")
-    
-    # Prepare data for chart
-    df_chart = pd.DataFrame({
-        'Type': ['Actual Values', 'Predicted Value'],
-        'Value (EUR)': [df_clean['value_eur'].mean(), predicted_value]
-    })
+    try:
+        predicted_value = model.predict(input_data)[0]
+        st.write(f"Predicted Value (EUR): {predicted_value:,.2f}")
+        
+        # Prepare data for chart
+        df_chart = pd.DataFrame({
+            'Type': ['Actual Values', 'Predicted Value'],
+            'Value (EUR)': [df_clean['value_eur'].mean(), predicted_value]
+        })
 
-    # Create a bar chart to compare actual vs. predicted value
-    chart = alt.Chart(df_chart).mark_bar().encode(
-        x='Type',
-        y='Value (EUR)',
-        color='Type'
-    ).properties(
-        width=alt.Step(80)  # Controls the width of the bars
-    )
+        # Create a bar chart to compare actual vs. predicted value
+        chart = alt.Chart(df_chart).mark_bar().encode(
+            x='Type',
+            y='Value (EUR)',
+            color='Type'
+        ).properties(
+            width=alt.Step(80)  # Controls the width of the bars
+        )
 
-    st.altair_chart(chart)
+        st.altair_chart(chart)
+    except Exception as e:
+        st.error(f"Error during prediction: {e}")
