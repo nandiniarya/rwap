@@ -29,7 +29,6 @@ st.dataframe(df)
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-import plotly.graph_objs as go
 
 # Sample DataFrame for demonstration (use your df here)
 # df = pd.read_csv('your_data.csv')  # Ensure to use your actual data
@@ -42,6 +41,12 @@ wage_ranges = [
 ]
 wage_range_labels = [f"{low:,} - {high:,}" for low, high in wage_ranges]
 
+# Create options for player tags
+player_tags_columns = ['player_tags_1', 'player_tags_2', 'player_tags_3',
+                       'player_tags_4', 'player_tags_5', 'player_tags_6', 'player_tags_7']
+player_tags = sorted(set(tag for col in player_tags_columns for tag in df[col].dropna().unique()))
+player_tags_options = [tag for tag in player_tags]
+
 # Sidebar for FIFA version selection
 st.sidebar.header("Filters")
 fifa_version = st.sidebar.selectbox(
@@ -52,7 +57,40 @@ fifa_version = st.sidebar.selectbox(
 # Filtered DataFrame based on FIFA version
 df_fifa = df[df['fifa_version'] == fifa_version] if fifa_version else df
 
-# Wage range selection
+# Player position selection
+player_positions = sorted(df_fifa['player_positions_1'].dropna().unique())
+player_position = st.sidebar.selectbox(
+    "Select Player Position",
+    player_positions
+)
+
+# League name selection
+leagues = sorted(df_fifa[df_fifa['player_positions_1'] == player_position]['league_name'].dropna().unique()) if player_position else []
+league_name = st.sidebar.selectbox(
+    "Select League Name",
+    leagues
+)
+
+# Club name selection
+clubs = sorted(df_fifa[(df_fifa['player_positions_1'] == player_position) & (df_fifa['league_name'] == league_name)]['club_name'].dropna().unique()) if league_name else []
+club_name = st.sidebar.selectbox(
+    "Select Club Name",
+    clubs
+)
+
+# First Visualization: Player Position Bar Chart
+if club_name:
+    filtered_df = df_fifa[(df_fifa['player_positions_1'] == player_position) &
+                          (df_fifa['league_name'] == league_name) &
+                          (df_fifa['club_name'] == club_name)]
+    
+    if not filtered_df.empty:
+        fig = px.bar(filtered_df, x='short_name', y=['overall', 'potential', 'value_eur', 'age'],
+                     barmode='group', labels={'value': 'Value (€)'})
+        st.subheader("Player Stats by Position")
+        st.plotly_chart(fig)
+
+# Second Visualization: Wage Range Treemap
 wage_range_index = st.sidebar.selectbox(
     "Select Wage Range",
     list(range(len(wage_range_labels))),
@@ -69,26 +107,37 @@ if not filtered_df_wage.empty:
         values='wage_eur',
         title='Player Positions Treemap'
     )
-
-    # Use Plotly's FigureWidget for interactive clicks
-    fig_widget = go.FigureWidget(fig)
-    scatter = fig_widget.data[0]
-
     st.subheader("Player Stats by Wage Range")
     st.plotly_chart(fig)
 
-    # Interactive handling within Streamlit
-    clicked_data = st.session_state.get('clicked_data')
-
-    if st.session_state.get('clicked') and clicked_data:
-        selected_position = clicked_data
-        filtered_details = filtered_df_wage[filtered_df_wage['player_positions_1'] == selected_position]
-        if not filtered_details.empty:
-            st.write("Player Details:")
-            st.dataframe(filtered_details[['short_name', 'player_positions_1', 'nationality_name', 'club_name', 'wage_eur', 'value_eur', 'overall', 'potential', 'age']])
+    # Display player details
+    selected_position = st.selectbox("Select Player Position from Treemap", sorted(filtered_df_wage['player_positions_1'].unique()))
+    filtered_details = filtered_df_wage[filtered_df_wage['player_positions_1'] == selected_position]
+    
+    if not filtered_details.empty:
+        st.write("Player Details:")
+        st.dataframe(filtered_details[['short_name', 'player_positions_1', 'nationality_name', 'club_name', 'wage_eur', 'value_eur', 'overall', 'potential', 'age']])
 
 # Third Visualization: Player Tags Bar Chart
-# ... (rest of your code) ...
+selected_tags = st.sidebar.multiselect(
+    "Select Player Tags",
+    options=player_tags_options
+)
+
+if selected_tags:
+    filtered_df_tags = df[df[player_tags_columns].isin(selected_tags).any(axis=1)]
+    players = sorted(filtered_df_tags['short_name'].unique())
+    selected_players = st.sidebar.multiselect(
+        "Select Player Names",
+        options=players
+    )
+    
+    if selected_players:
+        filtered_df_players = filtered_df_tags[filtered_df_tags['short_name'].isin(selected_players)]
+        fig = px.bar(filtered_df_players, x='short_name', y=['overall', 'potential', 'value_eur', 'age'],
+                     barmode='group', labels={'value': 'Value (€)'})
+        st.subheader("Player Stats by Tags")
+        st.plotly_chart(fig)
 
 
 
