@@ -90,11 +90,21 @@ if club_name:
         st.subheader("Player Stats by Position")
         st.plotly_chart(fig)
 
+#second 
+# Define wage ranges
+wage_ranges = [
+    (0, 100000), (100001, 200000), (200001, 300000), (300001, 400000),
+    (400001, 500000), (500001, 600000), (600001, 700000), (700001, 800000),
+    (800001, 900000), (900001, 1000000)
+]
+wage_range_labels = [f"{low:,} - {high:,}" for low, high in wage_ranges]
+
 # Sidebar for FIFA version selection
 st.sidebar.header("Filters")
 fifa_version = st.sidebar.selectbox(
     "Select FIFA Version",
-    sorted(df['fifa_version'].unique())
+    sorted(df['fifa_version'].unique()),
+    key="fifa_version_selectbox"
 )
 
 # Filtered DataFrame based on FIFA version
@@ -104,7 +114,8 @@ df_fifa = df[df['fifa_version'] == fifa_version] if fifa_version else df
 wage_range_index = st.sidebar.selectbox(
     "Select Wage Range",
     list(range(len(wage_range_labels))),
-    format_func=lambda x: wage_range_labels[x]
+    format_func=lambda x: wage_range_labels[x],
+    key="wage_range_selectbox"
 )
 
 low, high = wage_ranges[wage_range_index]
@@ -118,18 +129,16 @@ if not filtered_df_wage.empty:
         title='Player Positions Treemap'
     )
     st.subheader("Player Stats by Wage Range")
-    
-    # Capture click data from the treemap
-    selected_points = plotly_events(fig, click_event=True)
-    
-    # Check if a click was made
-    if selected_points:
-        selected_position = selected_points[0]['label']
-        filtered_details = filtered_df_wage[filtered_df_wage['player_positions_1'] == selected_position]
-        
-        if not filtered_details.empty:
-            st.write(f"Player Details for Position: {selected_position}")
-            st.dataframe(filtered_details[['short_name', 'player_positions_1', 'nationality_name', 'club_name', 'wage_eur', 'value_eur', 'overall', 'potential', 'age']])
+    st.plotly_chart(fig)
+
+# Add unique keys for other widgets similarly
+# Example:
+# player_position = st.sidebar.selectbox("Select Player Position", player_positions, key="player_position_selectbox")
+# league_name = st.sidebar.selectbox("Select League Name", leagues, key="league_name_selectbox")
+# club_name = st.sidebar.selectbox("Select Club Name", clubs, key="club_name_selectbox")
+
+
+
 # Third Visualization: Player Tags Bar Chart
 selected_tags = st.sidebar.multiselect(
     "Select Player Tags",
