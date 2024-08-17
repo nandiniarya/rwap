@@ -246,8 +246,8 @@ if st.button('Predict Value (EUR)'):
         
         # Prepare data for chart
         df_chart = pd.DataFrame({
-            'Type': ['Actual Values', 'Predicted Value'],
-            'Value (EUR)': [df_clean['value_eur'].mean(), predicted_value]
+            'Type': [ 'Predicted Value'],
+            'Value (EUR)': [predicted_value]
         })
 
         # Create a bar chart to compare actual vs. predicted value
