@@ -195,11 +195,10 @@ import pandas as pd
 import statsmodels.formula.api as smf
 import altair as alt
 
-# Assuming df is your DataFrame
-# Drop rows with missing values in relevant columns
+# Clean DataFrame (assuming df is defined elsewhere in your code)
 df_clean = df[['value_eur', 'overall', 'potential', 'age', 'wage_eur', 'international_reputation', 'player_positions_1', 'skill_moves']].dropna()
 
-# Convert categorical variable to one-hot encoded variables
+# One-hot encoding
 df_clean = pd.get_dummies(df_clean, columns=['player_positions_1'], drop_first=True)
 
 # Define the regression model
@@ -231,6 +230,9 @@ input_data = pd.DataFrame({
     **{f'player_positions_1_{pos}': [1 if player_position == pos else 0] for pos in df['player_positions_1'].unique() if pos != df['player_positions_1'].unique()[0]}
 })
 
+# Align input_data columns with df_clean columns (fill missing columns with 0)
+input_data = input_data.reindex(columns=model.model.exog_names, fill_value=0)
+
 # Button to trigger prediction
 if st.button('Predict Value (EUR)'):
     predicted_value = model.predict(input_data)[0]
@@ -252,5 +254,3 @@ if st.button('Predict Value (EUR)'):
     )
 
     st.altair_chart(chart)
-
-
