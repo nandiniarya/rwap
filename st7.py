@@ -90,7 +90,17 @@ if club_name:
         st.subheader("Player Stats by Position")
         st.plotly_chart(fig)
 
-# Second Visualization: Wage Range Treemap
+# Sidebar for FIFA version selection
+st.sidebar.header("Filters")
+fifa_version = st.sidebar.selectbox(
+    "Select FIFA Version",
+    sorted(df['fifa_version'].unique())
+)
+
+# Filtered DataFrame based on FIFA version
+df_fifa = df[df['fifa_version'] == fifa_version] if fifa_version else df
+
+# Wage range selection
 wage_range_index = st.sidebar.selectbox(
     "Select Wage Range",
     list(range(len(wage_range_labels))),
@@ -108,16 +118,18 @@ if not filtered_df_wage.empty:
         title='Player Positions Treemap'
     )
     st.subheader("Player Stats by Wage Range")
-    st.plotly_chart(fig)
-
-    # Display player details
-    selected_position = st.selectbox("Select Player Position from Treemap", sorted(filtered_df_wage['player_positions_1'].unique()))
-    filtered_details = filtered_df_wage[filtered_df_wage['player_positions_1'] == selected_position]
     
-    if not filtered_details.empty:
-        st.write("Player Details:")
-        st.dataframe(filtered_details[['short_name', 'player_positions_1', 'nationality_name', 'club_name', 'wage_eur', 'value_eur', 'overall', 'potential', 'age']])
-
+    # Capture click data from the treemap
+    selected_points = plotly_events(fig, click_event=True)
+    
+    # Check if a click was made
+    if selected_points:
+        selected_position = selected_points[0]['label']
+        filtered_details = filtered_df_wage[filtered_df_wage['player_positions_1'] == selected_position]
+        
+        if not filtered_details.empty:
+            st.write(f"Player Details for Position: {selected_position}")
+            st.dataframe(filtered_details[['short_name', 'player_positions_1', 'nationality_name', 'club_name', 'wage_eur', 'value_eur', 'overall', 'potential', 'age']])
 # Third Visualization: Player Tags Bar Chart
 selected_tags = st.sidebar.multiselect(
     "Select Player Tags",
